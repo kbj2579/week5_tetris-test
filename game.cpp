@@ -11,8 +11,8 @@
 
 
 Tetromino Tetromino::I("I", 4, "XXXXOOOOXXXXXXXX");
-Tetromino Tetromino::O("O", 2, "XXXXXOOXXOOXXXXX");
-Tetromino Tetromino::T("T", 4, "XOXXOOOXXXXXXXXX");
+Tetromino Tetromino::O("O", 2, "OOOO");
+Tetromino Tetromino::T("T", 3, "XOXOOOXXX");
 Tetromino Tetromino::S("S", 3, "XOOOOXXXX");
 Tetromino Tetromino::Z("Z", 3, "OOXXOOXXX");
 Tetromino Tetromino::J("J", 3, "OXXOOOXXX");
@@ -21,9 +21,9 @@ Tetromino Tetromino::L("L", 3, "XXOOOOXXX");
 
 // board 3개를 그린다.
 void Game::drawBoard(){
-  console::drawBox(0,0,10,20); // board 칸을 그린다
-  console::drawBox(12,0,16,5); // Next 칸을 그린다
-  console::drawBox(17,0,21,5); // Hold 칸을 그린다
+  console::drawBox(0,0,11,21); // board 칸을 그린다
+  console::drawBox(12,0,17,5); // Next 칸을 그린다
+  console::drawBox(18,0,23,5); // Hold 칸을 그린다
 }
 void Game::random() {
   randNum = (int)rand() % 7 + 1;
@@ -88,28 +88,68 @@ void Game::downTetro() {
 }
 
 void Game::handleTetroInput() {
-  if(console::key(console::K_LEFT)){
+  if(console::key(console::K_X)){
+    cw++;
     curT.rotatedCW();
   }
-  if(console::key(console::K_RIGHT)){
+  if(console::key(console::K_Z)){
+    ccw++;
     curT.rotatedCCW();
   }
-  if(console::key(console::K_Z)){
+  if(console::key(console::K_LEFT)){
     if(!leftWall) {curX--;}
   }
-  if(console::key(console::K_X)){
+  if(console::key(console::K_RIGHT)){
     if(!rightWall){curX++;}
+  }
+  if(console::key(console::K_SPACE)){
+    spaceTouch += 1;
+    if(spaceTouch == 1){
+      holdT = curT;
+      if(cw >= ccw){
+        for(int i = 0; i < cw - ccw; i++){
+          holdT.rotatedCCW();
+        }
+      }
+      else{
+        for(int i = 0; i < ccw - cw; i++){
+          holdT.rotatedCW();
+        }
+      }
+      floor = true;
+    }
+    else if(canSpace == true){
+      swapT = holdT;
+      holdT = curT;
+      curT = swapT;
+      if(cw >= ccw){
+        for(int i = 0; i < cw - ccw; i++){
+          holdT.rotatedCCW();
+        }
+      }
+      else{
+        for(int i = 0; i < ccw - cw; i++){
+          holdT.rotatedCW();
+        }
+      }
+      canSpace = false;
+    }
+  }
+  if(console::key(console::K_DOWN)){
+    curY++;
   }
 }
 
-void Game::hitWall(){ 
+ void Game::hitWall() { 
   for(int i = 0; i < 4; i++){
     for(int j = 0; j < 4; j++){
-      if(curT.check(j, i) == true && curX + j == 1){
+      if(curT.check(i, j) == true && (curX + j == 1 || board_[curX + j - 2][curY + i] == true)){
         leftWall = true;
         return;
       }
-      else if(curT.check(j, i) == true && curX + j == 9){
+    }
+    for(int j = 3; j >= 0; j--){
+      if(curT.check(i, j) == true && (curX + j == 10 || board_[curX + j - 2][curY + i] == true)){
         rightWall = true;
         return;
       }
@@ -121,12 +161,14 @@ void Game::hitWall(){
 
 void Game::hitFloor(){
   for(int i = 0; i < 4; i++){
-    for(int j = 3; j >= 0; j--){
-      if(curT.check(i, j) == true && (board_[curX + i][curY + j] == true || curY + j == 20)){
+    for(int j = 0; j < 4; j++){
+      if(curT.check(i, j) == true && (board_[curX + j - 1][curY + i] == true || curY + i == 20)){
         floor = true;
         for(int k = 0; k < 4; k++){
           for(int m = 0; m < 4; m++){
-            if(curT.check(k, m)) {board_[curX + k][curY + m - 1] = true;}
+            if(curT.check(k, m)) {
+              board_[curX + m - 1][curY + k - 1] = true;
+            }
           }
         }
         return;
@@ -137,56 +179,141 @@ void Game::hitFloor(){
 
   // 게임의 한 프레임을 처리한다.
 void Game::update() {
+  handleTetroInput();
   downTetro();
   hitWall();
   hitFloor();
-  if(floor){
+  lineCheck();
+  if(floor){ // 현재 테트로미노가 바닥에 닿았을경우 다음 테트로미노가 현재 테트로미노가 되어 이동한다.
     curT = nextT;
     random();
     curX = BOARD_WIDTH/2 - 1;
     curY = 1;
-    floor = false;  
+    floor = false;
+    canSpace = true;
+    cw = 0;
+    ccw = 0;
   }
-  handleTetroInput();
 }   
 // 게임 화면을 그린다.
 void Game::draw(){
-  drawBoard();
+  drawBoard(); // 보드판을 그린다.
+  console::draw(13,0,"Next");
+  console::draw(19,0,"Hold");
+   
+   int minH = 21;
+   int minX = 0;
+   int minY = 0;
+   for(int i = 3; i >= 0; i--){
+    for(int j = 3; j >= 0; j--){
+      if(curT.check(i, j)){
+        for(int m = curY + i - 1; m < BOARD_HEIGHT; m++){
+            if(board_[curX + j - 1][m] == true){
+              if(m + 1 - (curY + i) < minH){
+                minH = m + 1 - (curY + i);
+                minX = curX;
+                minY = m - i;
+              }
+            }
+        }
+      }
+    }
+  }
+    
+    if(minH == 21){
+      bool check = true;
+      int floorY = 20;
+      for(int i = 3; i >= 0; i--){
+        for(int j = 3; j >= 0; j--){
+          if(curT.check(i, j)){
+            if(check){
+              minY = i;
+              floorY -= i;
+              check = false;
+            }
+            curT.drawAt(SHADOW_STRING, curX + j, floorY + i);
+          }
+        }
+      }
+    }
+    else{
+      for(int i = 3; i >= 0; i--){
+        for(int j = 3; j >= 0; j--){
+          if(curT.check(i, j)){
+            curT.drawAt(SHADOW_STRING, minX + j, minY + i);
+          }
+        }   
+      }
+    }
+
+    // 보드판에서 움직이고 있는 테트로미노를 그린다.
   for(int i = 0; i < 4; i++){
     for(int j = 0; j < 4; j++){
       if(curT.check(i, j)){
-        curT.drawAt(BLOCK_STRING, curX + i, curY + j);
-        //std::cout << curY;
+        curT.drawAt(BLOCK_STRING, curX + j, curY + i);
       }
     }
   }
+
+  // 보드판에 쌓이는 블록을 그린다.
   for(int i = 0; i < BOARD_WIDTH; i++){
     for(int j = 0; j < BOARD_HEIGHT; j++){
       if(board_[i][j] == true){
-        console::draw(i, j, BLOCK_STRING);
+        console::draw(i + 1, j + 1, BLOCK_STRING);
       }
     }
   }
+
+  // Next 칸에 nextT를 그린다.
+  for(int i = 0; i < 4; i++){
+    for(int j = 0; j < 4; j++){
+      if(nextT.check(i, j)){
+        nextT.drawAt(BLOCK_STRING, 13 + j, 1 + i);
+      }
+    }
+  }
+  // Hold 칸에 holdT를 그린다.  
+  if(spaceTouch >= 1){
+    for(int i = 0; i < 4; i++){
+      for(int j = 0; j < 4; j++){
+        if(holdT.check(i, j)){
+          holdT.drawAt(BLOCK_STRING, 19 + j, 1 + i);
+        }
+      }
+    }
+  } 
 }
 
 void Game::lineCheck(){
-  for(int i = 0; i < BOARD_WIDTH; i++){
-    for(int j = 0 ; j < BOARD_HEIGHT; j++){
-      if(board_[i][j] == false){
-        break;
+  int count;
+  for(int i = BOARD_HEIGHT - 1; i >= 0; i--){
+    count = 0;
+    for(int j = 0; j < BOARD_WIDTH; j++){
+      if(board_[j][i] == true){
+        count++;
       }
     }
-    lineDown(i);
+    
+    if(count == 10){
+      count_line++;
+      for(int k = 0; k < BOARD_WIDTH; k++){
+        board_[k][i] = false;
+      }
+      for(int m = i; m > 0; m--){
+        for(int n = 0; n < BOARD_WIDTH; n++){
+          board_[n][m] = board_[n][m - 1];
+        }
+      }
+      for(int p = 0; p < BOARD_WIDTH; p++){
+        board_[p][0] = false;
+      }
+      i -= 1;
+    }
   }
 }
 
-void Game::lineDown(int i){
-  for(int k = i; k < BOARD_WIDTH - 1; k++){
-    for(int j = 0 ; j < BOARD_HEIGHT; j++){
-      board_[k][j] = board_[k + 1][j];
-    }
-  }
-}
+
+
 
 // 게임 루프가 종료되어야 하는지 여부를 반환한다.
 bool Game::shouldExit(){
@@ -211,4 +338,3 @@ Game::Game() {
   firstRandom();
   random();
 }
-

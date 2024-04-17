@@ -21,16 +21,20 @@ private:
   Tetromino curT = Tetromino::I;
   Tetromino nextT = Tetromino::I;
   Tetromino holdT = Tetromino::I;
-  
+  Tetromino swapT = Tetromino::I;
   int randNum;
   int curX = BOARD_WIDTH/2 - 1;
   int curY = 1;
-
   int dropTimer = DROP_DELAY;
 
   bool leftWall = false;
   bool rightWall = false;
   bool floor = false;
+  int spaceTouch = 0;
+  bool canSpace = false;
+
+  int cw = 0;
+  int ccw = 0;
   // 보드판을 그린다
   void drawBoard();
 
@@ -55,8 +59,7 @@ private:
   // board판에 블록 line이 만들어져있는지 확인한다.
   void lineCheck();
 
-  // board판에 블록 line을 제거하고 블록줄들을 한칸씩 내린다.
-  void lineDown(int i);
+
 public:
   // 게임의 한 프레임을 처리한다.
   void update();
