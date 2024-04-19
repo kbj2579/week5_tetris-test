@@ -2,7 +2,7 @@
 #include "console/console.h"
 #include <iostream>
 #include <string>
-#define SHADOW_STRING "⛶"
+#define SHADOW_STRING "□"
 #define BLOCK_STRING "■"
 
 

@@ -35,6 +35,12 @@ private:
 
   int cw = 0;
   int ccw = 0;
+
+  int minH = 21;
+  int minX = 0;
+  int minY = 0;
+  bool check = true;
+  int floorY = 20;
   // 보드판을 그린다
   void drawBoard();
 

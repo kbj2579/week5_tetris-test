@@ -133,12 +133,56 @@ void Game::handleTetroInput() {
         }
       }
       canSpace = false;
+      curY = 1;
     }
   }
+  if(console::key(console::K_UP)){ // 테트로미노를 즉시 바닥에 도착시킨다
+   minH = 21;
+   minX = 0;
+   minY = 0;
+   for(int i = 3; i >= 0; i--){
+    for(int j = 3; j >= 0; j--){
+      if(curT.check(i, j)){
+        for(int m = curY + i - 1; m < BOARD_HEIGHT; m++){
+            if(board_[curX + j - 1][m] == true){
+              if(m + 1 - (curY + i) < minH){
+                minH = m + 1 - (curY + i);
+                minX = curX;
+                minY = m - i;
+              }
+            }
+        }
+      }
+    }
+  }
+    
+    if(minH == 21){
+      check = true;
+      floorY = 20;
+      for(int i = 3; i >= 0; i--){
+        for(int j = 3; j >= 0; j--){
+          if(curT.check(i, j)){
+            if(check){
+              floorY = 20 - i;
+              curY = floorY;
+              return;
+            }
+          }
+        }
+      }
+    }
+    else{
+      curX = minX;
+      curY = minY;
+    }
+  }
+
+
   if(console::key(console::K_DOWN)){
     curY++;
   }
 }
+
 
  void Game::hitWall() { 
   for(int i = 0; i < 4; i++){
@@ -200,14 +244,16 @@ void Game::draw(){
   drawBoard(); // 보드판을 그린다.
   console::draw(13,0,"Next");
   console::draw(19,0,"Hold");
-   
-   int minH = 21;
-   int minX = 0;
-   int minY = 0;
-   for(int i = 3; i >= 0; i--){
+  console::draw(0, 22, std::to_string(count_line) + " lines left");
+  
+  //shadaw string 을 그린다
+  minH = 21;
+  minX = 0;
+  minY = 0;
+  for(int i = 3; i >= 0; i--){
     for(int j = 3; j >= 0; j--){
       if(curT.check(i, j)){
-        for(int m = curY + i - 1; m < BOARD_HEIGHT; m++){
+        for(int m = curY + i; m < BOARD_HEIGHT; m++){
             if(board_[curX + j - 1][m] == true){
               if(m + 1 - (curY + i) < minH){
                 minH = m + 1 - (curY + i);
@@ -221,13 +267,13 @@ void Game::draw(){
   }
     
     if(minH == 21){
-      bool check = true;
-      int floorY = 20;
+      check = true;
+      floorY = 20;
       for(int i = 3; i >= 0; i--){
         for(int j = 3; j >= 0; j--){
           if(curT.check(i, j)){
             if(check){
-              minY = i;
+              //minY = (3 - i);// curY의 좌표가 될수있게 해야함. floory 가 19여야함.
               floorY -= i;
               check = false;
             }
@@ -295,7 +341,7 @@ void Game::lineCheck(){
     }
     
     if(count == 10){
-      count_line++;
+      count_line--;
       for(int k = 0; k < BOARD_WIDTH; k++){
         board_[k][i] = false;
       }
@@ -321,7 +367,7 @@ bool Game::shouldExit(){
   if(console::key(console::K_ESC)){
     return true;
   }
-  if(count_line == 40){
+  if(count_line == 0){
     return true;
   }
   return false;
@@ -333,7 +379,7 @@ Game::Game() {
       board_[i][j] = false;
     }
   }
-  count_line = 0;   
+  count_line = 40;   
   randNum = 0;
   firstRandom();
   random();
