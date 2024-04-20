@@ -1,5 +1,5 @@
 실행 명령어
-git clone https://github.com/kbj2579/week4_database.git database  
+git clone https://github.com/kbj2579/week5_tetris-test.git
 cd tetris  
 mingw32-make  
 ./main.exe
