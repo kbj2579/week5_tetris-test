@@ -2,7 +2,7 @@
 #include "console/console.h"
 #include <iostream>
 #include <cstdlib>
-#include <chrono>
+
 #define BOARD_WIDTH 10
 #define BOARD_HEIGHT 20
 #define LINES 40
@@ -142,44 +142,7 @@ void Game::handleTetroInput() {
     }
   }
   if(console::key(console::K_UP)){ // 테트로미노를 즉시 바닥에 도착시킨다
-   minH = 21;
-   minX = 0;
-   minY = 0;
-   for(int i = 3; i >= 0; i--){
-    for(int j = 3; j >= 0; j--){
-      if(curT.check(i, j)){
-        for(int m = curY + i - 1; m < BOARD_HEIGHT; m++){
-            if(board_[curX + j - 1][m] == true){
-              if(m + 1 - (curY + i) < minH){
-                minH = m + 1 - (curY + i);
-                minX = curX;
-                minY = m - i;
-              }
-            }
-        }
-      }
-    }
-  }
-    
-    if(minH == 21){
-      check = true;
-      floorY = 20;
-      for(int i = 3; i >= 0; i--){
-        for(int j = 3; j >= 0; j--){
-          if(curT.check(i, j)){
-            if(check){
-              floorY = 20 - i;
-              curY = floorY;
-              return;
-            }
-          }
-        }
-      }
-    }
-    else{
-      curX = minX;
-      curY = minY;
-    }
+    curY = shadowOrHard();
   }
 
 
@@ -192,13 +155,13 @@ void Game::handleTetroInput() {
  void Game::hitWall() { 
   for(int i = 0; i < 4; i++){
     for(int j = 0; j < 4; j++){
-      if(curT.check(i, j) == true && (curX + j == 1 || board_[curX + j - 2][curY + i] == true)){
+      if(curT.check(i, j) == true && (curX + j == 1 || board_[curX + j - 2][curY + i - 1] == true)){
         leftWall = true;
         return;
       }
     }
     for(int j = 3; j >= 0; j--){
-      if(curT.check(i, j) == true && (curX + j == 10 || board_[curX + j - 2][curY + i] == true)){
+      if(curT.check(i, j) == true && (curX + j == 10 || board_[curX + j][curY + i - 1] == true)){
         rightWall = true;
         return;
       }
@@ -226,16 +189,59 @@ void Game::hitFloor(){
   }
 }
 
+// 승리 패배 확인
 void Game::winOrLose(){
   for(int i = 0; i < 4; i++){
     for(int j = 0; j < 4; j++){
-      if(curY == 1 && (board_[3][2] || board_[4][2] || board_[5][2])){ // 패배 데드라인 설정.
+      if(board_[3][1] || board_[4][1] || board_[5][1]){ // 패배 데드라인 설정.
         lose = true;
       }
     }
   }
 }
 
+// 쉐도우, 하드드롭 위치 확인
+int Game::shadowOrHard() {
+  int dis = 19;
+  int s = curT.size();
+  if(s == 2) s++;
+
+  for (int i = s - 1; i >= 0; i--){
+    for (int j = 0; j < s; j++){
+      if (curT.check(i, j)){
+        for (int k = 19; k >= curY; k--)
+          if (board_[curX + j - 1][k]) {
+            if (k - i <= dis)
+              dis =  k - i;
+          }
+      }
+    }
+  }
+
+
+  if (s == 3){
+    for (int j = 0; j < s; j++)
+      if (curT.check(s - 1, j)){ 
+        if (dis < 18) return dis;
+        return 18;
+      }
+  }
+  else if (s == 4)
+  {
+    for (int j = 0; j < s; j++)
+    {
+      if (curT.check(s - 1, j)){
+        if (dis < 17) return dis;
+        return 17;
+      }
+      if (curT.check(s - 2, j)){
+        if (dis < 16) return dis;
+        return 16;
+      }
+    }
+  }
+  return dis;
+}
   // 게임의 한 프레임을 처리한다.
 void Game::update() {
   handleTetroInput();
@@ -261,80 +267,31 @@ void Game::draw(){
   console::draw(13,0,"Next");
   console::draw(19,0,"Hold");
   console::draw(0, 22, std::to_string(count_line) + " lines left");
-  
-  static auto lastTime = std::chrono::steady_clock::now();
+
   auto currentTime = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime);
 
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
-  auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
-  duration -= minutes;
-  auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
-  duration -= seconds;
-  auto milliseconds = duration;
-  console::draw(4, 23, std::to_string(minutes.count()) + ":" + std::to_string(seconds.count()) + ":" + std::to_string(milliseconds.count()));
-  lastTime = currentTime;
+  int minutes = std::chrono::duration_cast<std::chrono::minutes>(duration).count() % 60;
+  int seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count() % 60;
+  int milliseconds = duration.count() % 1000;
+
+  std::ostringstream oss;
+  oss << std::setfill('0') << std::setw(2) << minutes << ":"//분
+      << std::setfill('0') << std::setw(2) << seconds << "."//초
+      << std::setfill('0') << std::setw(2) << milliseconds / 10;
+  console::draw(2, 23, oss.str());
   //shadaw string 을 그린다
-  minH = 21;
-  minX = 0;
-  minY = 0;
-  for(int i = 3; i >= 0; i--){
-    for(int j = 3; j >= 0; j--){
-      if(curT.check(i, j)){
-        for(int m = curY + i; m < BOARD_HEIGHT; m++){
-            if(board_[curX + j - 1][m] == true){
-              if(m + 1 - (curY + i) < minH){
-                minH = m + 1 - (curY + i);
-                minX = curX;
-                minY = m - i;
-              }
-            }
-        }
+  int s = curT.size();
+  if(s == 2) s++;
+  int shadowY = shadowOrHard();
+  for (int i = 0; i < s; ++i){
+    for (int j = 0; j < s; ++j){
+      if (curT.check(i, j)){
+        curT.drawAt(SHADOW_STRING, curX + j, shadowY + i);
       }
     }
-  } 
-    if(curT.name() =="J" && (board_[curX][19] == false && board_[curX + 1][19] == true)  && board_[curX][18] == false && curT.check(0, 1) && curT.check(0, 2) && curT.check(1, 1) && curT.check(2, 1)){
-          curT.drawAt(SHADOW_STRING, curX + 1, 18);
-          curT.drawAt(SHADOW_STRING, curX + 1, 19);
-          curT.drawAt(SHADOW_STRING, curX + 1, 20);
-          curT.drawAt(SHADOW_STRING, curX + 2, 18);
-      
-    }
-    else if(curT.name() =="L" && (board_[curX - 1][19] == false && board_[curX][19] == true)  && board_[curX - 1][18] == false && curT.check(0, 0) && curT.check(0, 1) && curT.check(1, 1) && curT.check(2, 1)){
-          curT.drawAt(SHADOW_STRING, curX + 1, 18);
-          curT.drawAt(SHADOW_STRING, curX + 1, 19);
-          curT.drawAt(SHADOW_STRING, curX + 1, 20);
-          curT.drawAt(SHADOW_STRING, curX, 18);
-    }
+  }
 
-     else if(minH == 21){
-      check = true;
-      floorY = 20;
-      for(int i = 3; i >= 0; i--){
-        for(int j = 3; j >= 0; j--){
-          if(curT.check(i, j)){
-            if(check){
-              //minY = (3 - i);// curY의 좌표가 될수있게 해야함. floory 가 19여야함.
-              floorY -= i;
-              check = false;
-            }
-            curT.drawAt(SHADOW_STRING, curX + j, floorY + i);
-          }
-        }
-      }
-    }
-    else{
-      for(int i = 3; i >= 0; i--){
-        for(int j = 3; j >= 0; j--){
-          if(curT.check(i, j)){
-            curT.drawAt(SHADOW_STRING, minX + j, minY + i);
-          }
-        }   
-      }
-    }
-
-
-    
-        
 
     // 보드판에서 움직이고 있는 테트로미노를 그린다.
   for(int i = 0; i < 4; i++){
@@ -373,10 +330,9 @@ void Game::draw(){
     }
   } 
 
-  if (count_line == 0)
-  {
+  if (count_line == 0){
     console::draw(2, 10, "You Win");
-    console::draw(4, 11, std::to_string(minutes.count()) + ":" + std::to_string(seconds.count()) + ":" + std::to_string(milliseconds.count()));
+    console::draw(2, 11, oss.str());
   }
   if(lose){
     console::draw(2, 10, "You Lost");

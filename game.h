@@ -3,7 +3,9 @@
 #define GAME_H
 
 #include "tetromino.h"
-
+#include <chrono>
+#include <sstream>
+#include <iomanip>
 #define BOARD_WIDTH 10
 #define BOARD_HEIGHT 20
 #define LINES 40
@@ -42,6 +44,7 @@ private:
   bool check = true;
   bool lose = false;
   int floorY = 20;
+  std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now(); // 게임 시작 시간
   // 보드판을 그린다
   void drawBoard();
 
@@ -67,6 +70,8 @@ private:
   void lineCheck();
 
   void winOrLose();
+
+  int shadowOrHard();
 public:
   // 게임의 한 프레임을 처리한다.
   void update();
