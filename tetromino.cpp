@@ -53,10 +53,10 @@
             }
         }
         else if(size_ == 4){
-            shape_[0][1] = true;
+            shape_[1][0] = true;
             shape_[1][1] = true;
-            shape_[2][1] = true;
-            shape_[3][1] = true;
+            shape_[1][2] = true;
+            shape_[1][3] = true;
         }
         original_ = this;
     }

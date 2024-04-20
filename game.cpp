@@ -2,7 +2,7 @@
 #include "console/console.h"
 #include <iostream>
 #include <cstdlib>
-
+#include <chrono>
 #define BOARD_WIDTH 10
 #define BOARD_HEIGHT 20
 #define LINES 40
@@ -80,7 +80,7 @@ void Game::firstRandom() {
 }
 
 void Game::downTetro() {
-  dropTimer -= 4;
+  dropTimer -= 1;
   if(dropTimer == 0){
     dropTimer = DROP_DELAY;
     curY++;
@@ -89,12 +89,16 @@ void Game::downTetro() {
 
 void Game::handleTetroInput() {
   if(console::key(console::K_X)){
-    cw++;
-    curT.rotatedCW();
+    if(!rightWall && !leftWall){
+      cw++;
+      curT.rotatedCW();
+    }
   }
   if(console::key(console::K_Z)){
-    ccw++;
-    curT.rotatedCCW();
+    if(!leftWall && !rightWall){
+      ccw++;
+      curT.rotatedCCW();
+    }
   }
   if(console::key(console::K_LEFT)){
     if(!leftWall) {curX--;}
@@ -133,6 +137,7 @@ void Game::handleTetroInput() {
         }
       }
       canSpace = false;
+      curX = BOARD_WIDTH/2 - 1;
       curY = 1;
     }
   }
@@ -221,6 +226,16 @@ void Game::hitFloor(){
   }
 }
 
+void Game::winOrLose(){
+  for(int i = 0; i < 4; i++){
+    for(int j = 0; j < 4; j++){
+      if(curY == 1 && (board_[3][2] || board_[4][2] || board_[5][2])){ // 패배 데드라인 설정.
+        lose = true;
+      }
+    }
+  }
+}
+
   // 게임의 한 프레임을 처리한다.
 void Game::update() {
   handleTetroInput();
@@ -228,6 +243,7 @@ void Game::update() {
   hitWall();
   hitFloor();
   lineCheck();
+  winOrLose();
   if(floor){ // 현재 테트로미노가 바닥에 닿았을경우 다음 테트로미노가 현재 테트로미노가 되어 이동한다.
     curT = nextT;
     random();
@@ -246,6 +262,17 @@ void Game::draw(){
   console::draw(19,0,"Hold");
   console::draw(0, 22, std::to_string(count_line) + " lines left");
   
+  static auto lastTime = std::chrono::steady_clock::now();
+  auto currentTime = std::chrono::steady_clock::now();
+
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
+  auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
+  duration -= minutes;
+  auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+  duration -= seconds;
+  auto milliseconds = duration;
+  console::draw(4, 23, std::to_string(minutes.count()) + ":" + std::to_string(seconds.count()) + ":" + std::to_string(milliseconds.count()));
+  lastTime = currentTime;
   //shadaw string 을 그린다
   minH = 21;
   minX = 0;
@@ -264,9 +291,22 @@ void Game::draw(){
         }
       }
     }
-  }
-    
-    if(minH == 21){
+  } 
+    if(curT.name() =="J" && (board_[curX][19] == false && board_[curX + 1][19] == true)  && board_[curX][18] == false && curT.check(0, 1) && curT.check(0, 2) && curT.check(1, 1) && curT.check(2, 1)){
+          curT.drawAt(SHADOW_STRING, curX + 1, 18);
+          curT.drawAt(SHADOW_STRING, curX + 1, 19);
+          curT.drawAt(SHADOW_STRING, curX + 1, 20);
+          curT.drawAt(SHADOW_STRING, curX + 2, 18);
+      
+    }
+    else if(curT.name() =="L" && (board_[curX - 1][19] == false && board_[curX][19] == true)  && board_[curX - 1][18] == false && curT.check(0, 0) && curT.check(0, 1) && curT.check(1, 1) && curT.check(2, 1)){
+          curT.drawAt(SHADOW_STRING, curX + 1, 18);
+          curT.drawAt(SHADOW_STRING, curX + 1, 19);
+          curT.drawAt(SHADOW_STRING, curX + 1, 20);
+          curT.drawAt(SHADOW_STRING, curX, 18);
+    }
+
+     else if(minH == 21){
       check = true;
       floorY = 20;
       for(int i = 3; i >= 0; i--){
@@ -291,6 +331,10 @@ void Game::draw(){
         }   
       }
     }
+
+
+    
+        
 
     // 보드판에서 움직이고 있는 테트로미노를 그린다.
   for(int i = 0; i < 4; i++){
@@ -328,6 +372,15 @@ void Game::draw(){
       }
     }
   } 
+
+  if (count_line == 0)
+  {
+    console::draw(2, 10, "You Win");
+    console::draw(4, 11, std::to_string(minutes.count()) + ":" + std::to_string(seconds.count()) + ":" + std::to_string(milliseconds.count()));
+  }
+  if(lose){
+    console::draw(2, 10, "You Lost");
+  }
 }
 
 void Game::lineCheck(){
@@ -370,6 +423,9 @@ bool Game::shouldExit(){
   if(count_line == 0){
     return true;
   }
+  if(lose){
+    return true;
+  }
   return false;
 }
 
@@ -379,7 +435,7 @@ Game::Game() {
       board_[i][j] = false;
     }
   }
-  count_line = 40;   
+  count_line = 40;
   randNum = 0;
   firstRandom();
   random();

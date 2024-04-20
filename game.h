@@ -40,6 +40,7 @@ private:
   int minX = 0;
   int minY = 0;
   bool check = true;
+  bool lose = false;
   int floorY = 20;
   // 보드판을 그린다
   void drawBoard();
@@ -65,7 +66,7 @@ private:
   // board판에 블록 line이 만들어져있는지 확인한다.
   void lineCheck();
 
-
+  void winOrLose();
 public:
   // 게임의 한 프레임을 처리한다.
   void update();
