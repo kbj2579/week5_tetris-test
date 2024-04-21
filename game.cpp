@@ -251,7 +251,7 @@ bool Game::cwCheck(){
   bool can = true;
   // I 블록이 바닥에 닿기직전 세로로 회전을 못하게 처리한다.
   if(curT.size() == 4){
-    if(curY == 18 && curT.check(1, 0)){
+    if((curY == 18 && curT.check(1, 0)) || (curT.check(1, 0) && board_[curX][curY + 2] == true)){
       can = false;
       return can;
     }
