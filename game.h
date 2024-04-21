@@ -72,6 +72,9 @@ private:
   void winOrLose();
 
   int shadowOrHard();
+
+  bool cwCheck();
+
 public:
   // 게임의 한 프레임을 처리한다.
   void update();

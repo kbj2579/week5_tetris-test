@@ -89,13 +89,13 @@ void Game::downTetro() {
 
 void Game::handleTetroInput() {
   if(console::key(console::K_X)){
-    if(!rightWall && !leftWall){
+    if(cwCheck()){
       cw++;
       curT.rotatedCW();
     }
   }
   if(console::key(console::K_Z)){
-    if(!leftWall && !rightWall){
+    if(cwCheck()){
       ccw++;
       curT.rotatedCCW();
     }
@@ -157,12 +157,14 @@ void Game::handleTetroInput() {
     for(int j = 0; j < 4; j++){
       if(curT.check(i, j) == true && (curX + j == 1 || board_[curX + j - 2][curY + i - 1] == true)){
         leftWall = true;
+        rightWall = false;
         return;
       }
     }
     for(int j = 3; j >= 0; j--){
       if(curT.check(i, j) == true && (curX + j == 10 || board_[curX + j][curY + i - 1] == true)){
         rightWall = true;
+        leftWall = false;
         return;
       }
     }
@@ -241,6 +243,53 @@ int Game::shadowOrHard() {
     }
   }
   return dis;
+}
+
+bool Game::cwCheck(){
+  bool can = true;
+
+  if(curT.size() == 4){
+      for(int i = 0; i < 4; i++){
+        for(int j = 3; j >= 0; j--){
+          if(curT.check(i, j) == true && (curX + j == 1 || board_[curX + j - 2][curY + i - 1] == true)){
+             if(j == 3)
+              can = false;
+              return can;
+          }
+        }
+      }
+  }
+
+  
+  else{    
+    for(int i = 0; i < 4; i++){
+      for(int j = 3; j >= 0; j--){
+        if(curT.check(i, j) == true && (curX + j == 1 || board_[curX + j - 2][curY + i - 1] == true)){
+          if(j == 1) 
+            can = false;
+            return can;
+          if(j == 2) 
+            can = false;
+            return can;
+          
+        }
+      }
+    }
+
+    for(int i = 0; i < 4; i++){
+      for(int j = 0; j <= 3; j++){
+        if(curT.check(i, j) == true && (curX + j == 10 || board_[curX + j][curY + i - 1] == true)){
+          if(j == 1) 
+            can = false;
+            return can;
+          if(j == 2) 
+            can = false;
+            return can;
+        }
+      }
+    }
+    return can;
+  }
 }
   // 게임의 한 프레임을 처리한다.
 void Game::update() {
