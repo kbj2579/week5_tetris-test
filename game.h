@@ -57,7 +57,7 @@ private:
   // 테트로미노를 아래로 이동시킨다.
   void downTetro();
 
-  // 키를 입력하여 테트로미노를 왼쪽,오른쪽으로 이동 또는 시계, 반시계 방향으로 회전시킨다
+  // 키를 입력하여 테트로미노를 이동, 회전 시킨다.
   void handleTetroInput();
 
   // 오른쪽 또는 왼쪽 벽에 닿아있는지 확인한다
@@ -69,10 +69,13 @@ private:
   // board판에 블록 line이 만들어져있는지 확인한다.
   void lineCheck();
 
+  // 승리, 패배 상태를 체크한다
   void winOrLose();
 
+  // 쉐도우스트링, 하드드롭이 되는 위치를 찾는다.
   int shadowOrHard();
 
+  // 시계, 반시계 방향으로 회전가능한 상태인지 체크한다.
   bool cwCheck();
 
 public:

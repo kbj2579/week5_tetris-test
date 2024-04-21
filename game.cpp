@@ -79,6 +79,7 @@ void Game::firstRandom() {
   }
 }
 
+// 테트로미노를 내린다.
 void Game::downTetro() {
   dropTimer -= 1;
   if(dropTimer == 0){
@@ -87,6 +88,7 @@ void Game::downTetro() {
   }
 }
 
+// 테트로미노를 회전시키거나 이동시킨다.
 void Game::handleTetroInput() {
   if(console::key(console::K_X)){
     if(cwCheck()){
@@ -247,21 +249,34 @@ int Game::shadowOrHard() {
 
 bool Game::cwCheck(){
   bool can = true;
+  // I 블록이 바닥에 닿기직전 세로로 회전을 못하게 처리한다.
+  if(curT.size() == 4){
+    if(curY == 18 && curT.check(1, 0)){
+      can = false;
+      return can;
+    }
+  }
 
+  // I 블록의 회전을 못하는 경우를 처리한다.
   if(curT.size() == 4){
       for(int i = 0; i < 4; i++){
         for(int j = 3; j >= 0; j--){
           if(curT.check(i, j) == true && (curX + j == 1 || board_[curX + j - 2][curY + i - 1] == true)){
-             if(j == 3)
+            if(i == 0 && j == 1)
+              can = false;
+              return can;
+          }
+          else if(curT.check(i, j) == true && (curX + j == 10 || curX + j + 1 == 10 || board_[curX + j][curY + i - 1] == true || board_[curX + j + 1][curY + i - 1] == true)){
+            if(i == 0 && j == 1)
               can = false;
               return can;
           }
         }
       }
+      return can;
   }
-
   
-  else{    
+  else{     // size가 3인 블록이 회전을 못하는 경우를 처리한다.
     for(int i = 0; i < 4; i++){
       for(int j = 3; j >= 0; j--){
         if(curT.check(i, j) == true && (curX + j == 1 || board_[curX + j - 2][curY + i - 1] == true)){
@@ -324,11 +339,13 @@ void Game::draw(){
   int seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count() % 60;
   int milliseconds = duration.count() % 1000;
 
+  // 시간출력
   std::ostringstream oss;
   oss << std::setfill('0') << std::setw(2) << minutes << ":"//분
       << std::setfill('0') << std::setw(2) << seconds << "."//초
       << std::setfill('0') << std::setw(2) << milliseconds / 10;
   console::draw(2, 23, oss.str());
+  
   //shadaw string 을 그린다
   int s = curT.size();
   if(s == 2) s++;
@@ -379,6 +396,7 @@ void Game::draw(){
     }
   } 
 
+  // 승리, 패배 될 경우를 그린다
   if (count_line == 0){
     console::draw(2, 10, "You Win");
     console::draw(2, 11, oss.str());
@@ -388,6 +406,8 @@ void Game::draw(){
   }
 }
 
+
+// 줄이 채워졌는지 체크한다
 void Game::lineCheck(){
   int count;
   for(int i = BOARD_HEIGHT - 1; i >= 0; i--){
